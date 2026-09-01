@@ -1,0 +1,7 @@
+match_id,date,competition,home_team,away_team,market,base_probability,production_probability,bookmaker_odds,data_quality,model_status,justification
+DEMO-001,2026-09-05,Premier League,Northbridge FC,Riverside United,BTTS Yes,0.67,0.71,1.62,EXCELLENT,ACTIVE,Strong opposing attack profiles; demonstration only.
+DEMO-001,2026-09-05,Premier League,Northbridge FC,Riverside United,Over 2.5,0.61,0.61,1.85,EXCELLENT,ACTIVE,Total-goals distribution supports the line; demonstration only.
+DEMO-001,2026-09-05,Premier League,Northbridge FC,Riverside United,Home Win,0.56,0.56,2.05,GOOD,ACTIVE,Home-side advantage in the sample; demonstration only.
+DEMO-002,2026-09-06,Championship,Albion Town,County Athletic,Over 1.5,0.77,0.77,1.38,GOOD,ACTIVE,High base probability but limited market edge; demonstration only.
+DEMO-002,2026-09-06,Championship,Albion Town,County Athletic,Under 3.5,0.73,0.73,1.55,GOOD,ACTIVE,Score distribution concentrated below four goals; demonstration only.
+DEMO-003,2026-09-06,League One,City Rovers,Wanderers FC,Away Win,0.46,0.46,2.45,MIXED,CHECK,Data-quality guard forces PASS; demonstration only.
