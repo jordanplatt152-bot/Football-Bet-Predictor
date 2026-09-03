@@ -1,1 +1,0 @@
-"""Football dashboard package."""
