@@ -197,3 +197,24 @@ def with_qol_display(frame: pd.DataFrame) -> pd.DataFrame:
     data["price_age_clock"] = data["dashboard_price_age_minutes"].map(_age_clock)
     data["model_rationale"] = data.apply(build_model_rationale, axis=1)
     return data
+
+
+def with_fixture_kickoff_display(frame: pd.DataFrame) -> pd.DataFrame:
+    """Add UK-local 24-hour kickoff display derived from event_commence_utc."""
+    data = frame.copy()
+    kickoff = pd.to_datetime(data["event_commence_utc"], errors="coerce", utc=True)
+    data["kickoff_display"] = kickoff.dt.tz_convert("Europe/London").dt.strftime("%H:%M")
+    data.loc[kickoff.isna(), "kickoff_display"] = "—"
+    return data
+
+
+def sort_dashboard_rows(frame: pd.DataFrame, sort_mode: str) -> pd.DataFrame:
+    """Sort display rows without changing eligibility or model/value calculations."""
+    data = frame.copy()
+    if sort_mode == "Kickoff — earliest first":
+        return data.sort_values("event_commence_utc", ascending=True, kind="stable", na_position="last")
+    if sort_mode == "Kickoff — latest first":
+        return data.sort_values("event_commence_utc", ascending=False, kind="stable", na_position="last")
+    if sort_mode == "Model/value ranking":
+        return sort_candidates(data)
+    raise ValueError(f"unsupported dashboard sort mode: {sort_mode}")

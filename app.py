@@ -9,8 +9,8 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 from value_feed import (
-    apply_dashboard_safety, select_adapter, sort_candidates,
-    validate_feed, with_display_percentages, with_qol_display,
+    apply_dashboard_safety, select_adapter, sort_candidates, sort_dashboard_rows,
+    validate_feed, with_display_percentages, with_fixture_kickoff_display, with_qol_display,
 )
 
 
@@ -59,21 +59,28 @@ def load_configured_feed(mode: str, csv_url: str, csv_path: str) -> pd.DataFrame
 
 
 def candidate_table(rows: pd.DataFrame) -> pd.DataFrame:
-    columns = ["price_grade", "model_grade", "fixture", "market", "model_rationale", "exchange_price_display",
+    columns = ["price_grade", "model_grade", "kickoff_display", "fixture", "market", "model_rationale", "exchange_price_display",
                "effective_exchange_odds", "model_percent_display", "edge_percent_display",
                "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]
     return rows[columns]
 
 
 def betting_board(data: pd.DataFrame, demo: bool) -> None:
+    sort_mode = st.selectbox(
+        "Sort by",
+        ["Kickoff — earliest first", "Kickoff — latest first", "Model/value ranking"],
+        index=0,
+    )
+
     st.subheader("Live Value Candidates")
-    live = sort_candidates(data[data.dashboard_candidate])
+    live = sort_dashboard_rows(data[data.dashboard_candidate], sort_mode)
     if demo:
         st.info("Demonstration mode cannot produce live value candidates.")
     elif live.empty:
         st.info("No markets currently satisfy every model, value, freshness and pre-match control.")
     else:
         st.dataframe(candidate_table(live), use_container_width=True, hide_index=True, column_config={
+            "kickoff_display": "Kickoff",
             "market": "Model Selection",
             "model_rationale": "Model Rationale",
             "exchange_price_display": "Exchange price",
@@ -93,11 +100,13 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     view = data
     if leagues: view = view[view.competition.isin(leagues)]
     if markets: view = view[view.market.isin(markets)]
-    st.dataframe(view[["fixture", "market", "model_grade", "price_grade", "exchange_price_display",
+    view = sort_dashboard_rows(view, sort_mode)
+    st.dataframe(view[["kickoff_display", "fixture", "market", "model_grade", "price_grade", "exchange_price_display",
                        "effective_exchange_odds", "model_percent_display", "edge_percent_display",
                        "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]],
                  use_container_width=True, hide_index=True,
                  column_config={
+                     "kickoff_display": "Kickoff",
                      "market": "Model Selection",
                      "model_rationale": "Model Rationale",
             "exchange_price_display": "Exchange price",
@@ -114,6 +123,8 @@ def match_analysis(data: pd.DataFrame) -> None:
     st.subheader("Match Analysis")
     fixture = st.selectbox("Fixture", data.fixture.drop_duplicates().tolist())
     rows = data[data.fixture.eq(fixture)]
+    kickoff = rows["kickoff_display"].iloc[0] if not rows.empty else "—"
+    st.caption(f"Kickoff: {kickoff} UK time")
     for _, row in rows.iterrows():
         with st.container(border=True):
             st.markdown(f"### Model Selection: {row.market}")
@@ -152,14 +163,14 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.3 · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.4 · kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")
 mode = select_adapter(csv_url, csv_path)
 try:
     raw = demo_data(now_utc) if mode == "DEMO" else load_configured_feed(mode, csv_url, csv_path)
-    data = with_qol_display(with_display_percentages(apply_dashboard_safety(validate_feed(raw), now_utc)))
+    data = with_fixture_kickoff_display(with_qol_display(with_display_percentages(apply_dashboard_safety(validate_feed(raw), now_utc))))
 except Exception as exc:
     st.error(f"CHECK — configured feed could not be validated: {exc}")
     st.stop()

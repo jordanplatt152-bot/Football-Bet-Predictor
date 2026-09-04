@@ -73,3 +73,9 @@ python -m py_compile app.py value_feed.py
 - Match Analysis exposes Home xG, Away xG, Total xG, then separately labels Price Grade / Edge / EV as value confirmation.
 - Betfair price, liquidity, edge, EV and price grade are never inputs to the rationale generator.
 - No model mathematics, candidate thresholds, liquidity independence, cutoff/freshness rules, workbook writes, or betting capability are changed.
+
+## V1.2.1.4 UI improvement
+- Adds a UK-local 24-hour `Kickoff` display derived from the existing `event_commence_utc` field.
+- Adds Betting Board sorting for earliest kickoff, latest kickoff, or the existing model/value ranking.
+- Displays kickoff time in Match Analysis.
+- Presentation only: no model, candidate-eligibility, price/value, cutoff, or liquidity logic is changed.
