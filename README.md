@@ -1,4 +1,4 @@
-# Football Model Centre V1.2.1.2
+# Football Model Centre V1.2.1.3
 
 This release adds the live model-and-value feed, independent candidate expiry, a five-minute dashboard refresh and separate `Live Value Candidates` / `All Model Markets` views.
 
@@ -51,15 +51,25 @@ python -m py_compile app.py value_feed.py
 ```
 
 
-## V1.2.1.2 liquidity-independent consistency update
+## V1.2.1.3 liquidity-independent consistency update
 - Removes liquidity from candidate eligibility and rejection logic.
 - Removes LOW_LIQUIDITY / LIQUIDITY_BELOW_50 as dashboard decision states.
 - Retains available liquidity as an informational display field only.
 - Preserves freshness, pre-match cutoff, model/data and value-grade controls.
 
 
-## V1.2.1.2 UI clarity and legacy-metadata cleanup
+## V1.2.1.3 UI clarity and legacy-metadata cleanup
 - Removes legacy liquidity rejection metadata before dashboard safety output.
 - Keeps dashboard status/rejection reasons internal for safety and Model Health diagnostics rather than showing them in normal betting-board tables or Match Analysis.
 - Presents `market` as `Model Selection` so mixed Over/Under sides are clearly understood as the model-favoured side of each market family.
 - Does not change market-selection mathematics: an Over 3.5 probability below 50% continues to select Under 3.5 at the complementary probability.
+
+
+## V1.2.1.3 model-first decision clarity
+- Exchange fractional prices are displayed without the approximation marker (`~`).
+- Price age is displayed as `HH:MM:SS`; the underlying timestamp and ten-minute freshness gate are unchanged.
+- Feed contract 1.2 adds read-only `home_expected_goals`, `away_expected_goals`, and `expected_total_goals`.
+- Live Value Candidates includes a concise Model Rationale derived only from model probability and xG evidence.
+- Match Analysis exposes Home xG, Away xG, Total xG, then separately labels Price Grade / Edge / EV as value confirmation.
+- Betfair price, liquidity, edge, EV and price grade are never inputs to the rationale generator.
+- No model mathematics, candidate thresholds, liquidity independence, cutoff/freshness rules, workbook writes, or betting capability are changed.

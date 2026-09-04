@@ -5,7 +5,8 @@ import pandas as pd
 
 REQUIRED_COLUMNS = [
     "feed_contract_version", "feed_generated_utc", "match_id", "date", "competition",
-    "home_team", "away_team", "market", "base_probability", "production_probability",
+    "home_team", "away_team", "market", "home_expected_goals", "away_expected_goals", "expected_total_goals",
+    "base_probability", "production_probability",
     "model_score", "model_grade", "data_quality", "model_status", "exchange_back_odds",
     "effective_exchange_odds", "bookmaker_odds", "fractional_odds", "price_source",
     "available_liquidity_gbp", "price_timestamp_utc", "event_commence_utc",
@@ -15,6 +16,7 @@ REQUIRED_COLUMNS = [
 ]
 
 NUMERIC_COLUMNS = [
+    "home_expected_goals", "away_expected_goals", "expected_total_goals",
     "base_probability", "production_probability", "model_score", "exchange_back_odds",
     "effective_exchange_odds", "bookmaker_odds", "available_liquidity_gbp",
     "implied_probability", "probability_edge", "expected_value", "feed_price_age_minutes",
@@ -46,8 +48,8 @@ def validate_feed(frame: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("unexpected feed columns: " + ", ".join(extra))
     data = data[REQUIRED_COLUMNS]
 
-    if not data["feed_contract_version"].astype(str).eq("1.1").all():
-        raise ValueError("unsupported feed contract; expected 1.1")
+    if not data["feed_contract_version"].astype(str).eq("1.2").all():
+        raise ValueError("unsupported feed contract; expected 1.2")
     for column in ("match_id", "competition", "home_team", "away_team", "market"):
         data[column] = data[column].astype(str).str.strip()
         if data[column].eq("").any():
@@ -70,6 +72,11 @@ def validate_feed(frame: pd.DataFrame) -> pd.DataFrame:
             raise ValueError(f"invalid {column}")
     if data["model_score"].isna().any() or (~data["model_score"].between(0, 100)).any():
         raise ValueError("invalid model_score")
+    for column in ("home_expected_goals", "away_expected_goals", "expected_total_goals"):
+        if data[column].isna().any() or (data[column] < 0).any():
+            raise ValueError(f"invalid {column}")
+    if ((data["home_expected_goals"] + data["away_expected_goals"] - data["expected_total_goals"]).abs() > 1e-9).any():
+        raise ValueError("expected_total_goals must equal home_expected_goals + away_expected_goals")
 
     both_prices = data[["bookmaker_odds", "effective_exchange_odds"]].notna().all(axis=1)
     mismatch = both_prices & ((data["bookmaker_odds"] - data["effective_exchange_odds"]).abs() > 1e-9)
@@ -158,4 +165,35 @@ def with_display_percentages(frame: pd.DataFrame) -> pd.DataFrame:
     data["model_percent_display"] = data["production_probability"] * 100
     data["edge_percent_display"] = data["probability_edge"] * 100
     data["ev_percent_display"] = data["expected_value"] * 100
+    return data
+
+
+def _age_clock(minutes) -> str:
+    if pd.isna(minutes) or float(minutes) < 0:
+        return "—"
+    seconds = int(round(float(minutes) * 60))
+    hours, rem = divmod(seconds, 3600)
+    mins, secs = divmod(rem, 60)
+    return f"{hours:02d}:{mins:02d}:{secs:02d}"
+
+
+def build_model_rationale(row: pd.Series) -> str:
+    """Explain the model selection using model evidence only; never price/value inputs."""
+    market = str(row.get("market", "Model selection"))
+    home_xg = float(row["home_expected_goals"])
+    away_xg = float(row["away_expected_goals"])
+    total_xg = float(row["expected_total_goals"])
+    probability = float(row["production_probability"])
+    if market.startswith("BTTS"):
+        return (f"Model projects Home xG {home_xg:.2f} and Away xG {away_xg:.2f} from the teams' "
+                f"venue-specific scoring/conceding profile; this produces a {probability:.1%} model probability for {market}.")
+    return (f"Model projects {total_xg:.2f} total goals (Home xG {home_xg:.2f}, Away xG {away_xg:.2f}) from the teams' "
+            f"venue-specific scoring/conceding profile; this produces a {probability:.1%} model probability for {market}.")
+
+
+def with_qol_display(frame: pd.DataFrame) -> pd.DataFrame:
+    data = frame.copy()
+    data["exchange_price_display"] = data["fractional_odds"].fillna("").astype(str).str.strip().str.replace(r"^~\s*", "", regex=True)
+    data["price_age_clock"] = data["dashboard_price_age_minutes"].map(_age_clock)
+    data["model_rationale"] = data.apply(build_model_rationale, axis=1)
     return data

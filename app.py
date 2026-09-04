@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 from value_feed import (
     apply_dashboard_safety, select_adapter, sort_candidates,
-    validate_feed, with_display_percentages,
+    validate_feed, with_display_percentages, with_qol_display,
 )
 
 
@@ -30,13 +30,14 @@ def demo_data(now: pd.Timestamp) -> pd.DataFrame:
     commence = now + timedelta(hours=6)
     cutoff = commence - timedelta(minutes=10)
     common = {
-        "feed_contract_version": "1.1", "feed_generated_utc": now.isoformat(),
+        "feed_contract_version": "1.2", "feed_generated_utc": now.isoformat(),
         "match_id": "DEMO-2026-FOOTBALL", "date": now.date().isoformat(),
         "competition": "Championship", "home_team": "Demonstration FC", "away_team": "Example United",
+        "home_expected_goals": 1.30, "away_expected_goals": 1.10, "expected_total_goals": 2.40,
         "base_probability": .65, "production_probability": .65, "model_score": 80,
         "model_grade": "B", "data_quality": "PASS", "model_status": "ACTIVE",
         "exchange_back_odds": 1.90, "effective_exchange_odds": 1.882,
-        "bookmaker_odds": 1.882, "fractional_odds": "~10/11",
+        "bookmaker_odds": 1.882, "fractional_odds": "10/11",
         "price_source": "DEMONSTRATION ONLY", "available_liquidity_gbp": 100,
         "price_timestamp_utc": capture.isoformat(), "event_commence_utc": commence.isoformat(),
         "pre_match_cutoff_utc": cutoff.isoformat(), "implied_probability": 1 / 1.882,
@@ -58,9 +59,9 @@ def load_configured_feed(mode: str, csv_url: str, csv_path: str) -> pd.DataFrame
 
 
 def candidate_table(rows: pd.DataFrame) -> pd.DataFrame:
-    columns = ["price_grade", "model_grade", "fixture", "market", "fractional_odds",
+    columns = ["price_grade", "model_grade", "fixture", "market", "model_rationale", "exchange_price_display",
                "effective_exchange_odds", "model_percent_display", "edge_percent_display",
-               "ev_percent_display", "available_liquidity_gbp", "dashboard_price_age_minutes"]
+               "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]
     return rows[columns]
 
 
@@ -74,13 +75,14 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     else:
         st.dataframe(candidate_table(live), use_container_width=True, hide_index=True, column_config={
             "market": "Model Selection",
-            "fractional_odds": "Exchange price",
+            "model_rationale": "Model Rationale",
+            "exchange_price_display": "Exchange price",
             "effective_exchange_odds": st.column_config.NumberColumn("Effective decimal", format="%.3f"),
             "model_percent_display": st.column_config.NumberColumn("Model %", format="%.1f%%"),
             "edge_percent_display": st.column_config.NumberColumn("Edge %", format="%.1f%%"),
             "ev_percent_display": st.column_config.NumberColumn("EV %", format="%.1f%%"),
             "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
-            "dashboard_price_age_minutes": st.column_config.NumberColumn("Age (min)", format="%.1f"),
+            "price_age_clock": "Age",
         })
 
     st.subheader("All Model Markets")
@@ -91,19 +93,20 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     view = data
     if leagues: view = view[view.competition.isin(leagues)]
     if markets: view = view[view.market.isin(markets)]
-    st.dataframe(view[["fixture", "market", "model_grade", "price_grade", "fractional_odds",
+    st.dataframe(view[["fixture", "market", "model_grade", "price_grade", "exchange_price_display",
                        "effective_exchange_odds", "model_percent_display", "edge_percent_display",
-                       "ev_percent_display", "available_liquidity_gbp", "dashboard_price_age_minutes"]],
+                       "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]],
                  use_container_width=True, hide_index=True,
                  column_config={
                      "market": "Model Selection",
-                     "fractional_odds": "Exchange price",
+                     "model_rationale": "Model Rationale",
+            "exchange_price_display": "Exchange price",
                      "effective_exchange_odds": st.column_config.NumberColumn("Effective decimal", format="%.3f"),
                      "model_percent_display": st.column_config.NumberColumn("Model %", format="%.1f%%"),
                      "edge_percent_display": st.column_config.NumberColumn("Edge %", format="%.1f%%"),
                      "ev_percent_display": st.column_config.NumberColumn("EV %", format="%.1f%%"),
                      "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
-                     "dashboard_price_age_minutes": st.column_config.NumberColumn("Age (min)", format="%.1f"),
+                     "price_age_clock": "Age",
                  })
 
 
@@ -116,10 +119,13 @@ def match_analysis(data: pd.DataFrame) -> None:
             st.markdown(f"### Model Selection: {row.market}")
             a, b, c, d = st.columns(4)
             a.metric("Model", f"{row.production_probability:.1%}", f"Grade {row.model_grade}")
-            b.metric("Exchange", row.fractional_odds or "—", f"Effective {row.effective_exchange_odds:.3f}" if pd.notna(row.effective_exchange_odds) else "Unpriced")
+            b.metric("Exchange", row.exchange_price_display or "—", f"Effective {row.effective_exchange_odds:.3f}" if pd.notna(row.effective_exchange_odds) else "Unpriced")
             c.metric("Edge", f"{row.probability_edge:.1%}" if pd.notna(row.probability_edge) else "—")
             d.metric("EV", f"{row.expected_value:.1%}" if pd.notna(row.expected_value) else "—", f"Price grade {row.price_grade}")
-            st.write(f"Liquidity: £{row.available_liquidity_gbp:.2f} · Price age: {row.dashboard_price_age_minutes:.1f} min · Cutoff: {row.pre_match_cutoff_utc}")
+            st.markdown(f"**Model rationale:** {row.model_rationale}")
+            st.caption(f"Model evidence: Home xG {row.home_expected_goals:.2f} · Away xG {row.away_expected_goals:.2f} · Total xG {row.expected_total_goals:.2f}")
+            st.write(f"Value confirmation: Price Grade {row.price_grade} · Edge {row.probability_edge:.1%} · EV {row.expected_value:.1%}")
+            st.write(f"Liquidity (information only): £{row.available_liquidity_gbp:.2f} · Price age: {row.price_age_clock} · Cutoff: {row.pre_match_cutoff_utc}")
 
 
 def model_health(data: pd.DataFrame, now: pd.Timestamp) -> None:
@@ -146,14 +152,14 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.2 · liquidity-independent · simplified decision display · automatic five-minute safety refresh")
+    st.caption("V1.2.1.3 · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")
 mode = select_adapter(csv_url, csv_path)
 try:
     raw = demo_data(now_utc) if mode == "DEMO" else load_configured_feed(mode, csv_url, csv_path)
-    data = with_display_percentages(apply_dashboard_safety(validate_feed(raw), now_utc))
+    data = with_qol_display(with_display_percentages(apply_dashboard_safety(validate_feed(raw), now_utc)))
 except Exception as exc:
     st.error(f"CHECK — configured feed could not be validated: {exc}")
     st.stop()
