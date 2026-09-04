@@ -11,6 +11,7 @@ from streamlit_autorefresh import st_autorefresh
 from value_feed import (
     apply_dashboard_safety, select_adapter, sort_candidates, sort_dashboard_rows,
     validate_feed, with_display_percentages, with_fixture_kickoff_display, with_qol_display, filter_dashboard_date,
+    filter_live_candidates_by_bet_type,
 )
 
 
@@ -76,7 +77,11 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     filtered = filter_dashboard_date(data, date_mode, now_utc)
 
     st.subheader("Live Value Candidates")
-    live = sort_dashboard_rows(filtered[filtered.dashboard_candidate], sort_mode)
+    live_base = filtered[filtered.dashboard_candidate].copy()
+    bet_type_options = ["All"] + sorted(live_base["market"].dropna().astype(str).unique().tolist())
+    bet_type = st.selectbox("Bet Type", bet_type_options, index=0, key="live_value_bet_type")
+    live = filter_live_candidates_by_bet_type(live_base, bet_type)
+    live = sort_dashboard_rows(live, sort_mode)
     if demo:
         st.info("Demonstration mode cannot produce live value candidates.")
     elif live.empty:
@@ -167,7 +172,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.5 · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.6 · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")

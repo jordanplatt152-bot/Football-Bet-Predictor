@@ -227,6 +227,13 @@ def filter_dashboard_date(frame: pd.DataFrame, date_mode: str, now_utc: pd.Times
     return frame[kickoff.dt.date == target].copy()
 
 
+
+def filter_live_candidates_by_bet_type(frame: pd.DataFrame, bet_type: str) -> pd.DataFrame:
+    """Filter already-qualified live candidates by exact market selection for display only."""
+    if bet_type == "All":
+        return frame.copy()
+    return frame[frame["market"].astype(str).eq(str(bet_type))].copy()
+
 def sort_dashboard_rows(frame: pd.DataFrame, sort_mode: str) -> pd.DataFrame:
     """Sort display rows without changing eligibility or model/value calculations."""
     data = frame.copy()

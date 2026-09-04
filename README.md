@@ -80,9 +80,15 @@ python -m py_compile app.py value_feed.py
 - Displays kickoff time in Match Analysis.
 - Presentation only: no model, candidate-eligibility, price/value, cutoff, or liquidity logic is changed.
 
-## V1.2.1.5 — Date + kickoff sorting
+## V1.2.1.6 — Date + kickoff sorting
 - Adds UK-local `Date` (`Fri 04 Sep`) alongside `Kickoff`.
 - Adds `All dates / Today / Tomorrow` Betting Board filter using the UK calendar date.
 - Earliest/latest sorting continues to use the full fixture timestamp, so ordering is chronological across both days.
 - Hides EV % from the main Betting Board tables only; EV remains in the underlying data and Match Analysis.
 - No changes to model, candidate eligibility, pricing, cutoff, liquidity, or feed contract logic.
+
+
+## V1.2.1.6 UI change
+- Added a display-only **Bet Type** filter to **Live Value Candidates**.
+- Options are `All` plus the exact market selections currently present among already-qualified live candidates.
+- The filter does not alter candidate qualification, rankings, model probabilities, value logic, price freshness, cutoff controls, liquidity handling, or the All Model Markets table.
