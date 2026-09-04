@@ -244,3 +244,28 @@ def sort_dashboard_rows(frame: pd.DataFrame, sort_mode: str) -> pd.DataFrame:
     if sort_mode == "Model/value ranking":
         return sort_candidates(data)
     raise ValueError(f"unsupported dashboard sort mode: {sort_mode}")
+
+
+def fixture_summary_rows(frame: pd.DataFrame, sort_mode: str) -> list[dict]:
+    """Build read-only fixture-first summaries from already prepared dashboard rows."""
+    ordered = sort_dashboard_rows(frame, sort_mode)
+    summaries = []
+    for _, group in ordered.groupby("match_id", sort=False):
+        first = group.iloc[0]
+        ranked = group.sort_values(["production_probability", "model_grade"], ascending=[False, True], kind="stable")
+        top = [
+            (str(row.market), float(row.production_probability), str(row.model_grade))
+            for _, row in ranked.head(3).iterrows()
+        ]
+        summaries.append({
+            "match_id": first.match_id,
+            "date": first.date_display,
+            "kickoff": first.kickoff_display,
+            "fixture": first.fixture,
+            "competition": first.competition,
+            "home_xg": float(first.home_expected_goals),
+            "away_xg": float(first.away_expected_goals),
+            "total_xg": float(first.expected_total_goals),
+            "top_selections": top,
+        })
+    return summaries
