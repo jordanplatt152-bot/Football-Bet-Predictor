@@ -200,12 +200,31 @@ def with_qol_display(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def with_fixture_kickoff_display(frame: pd.DataFrame) -> pd.DataFrame:
-    """Add UK-local 24-hour kickoff display derived from event_commence_utc."""
+    """Add UK-local date and 24-hour kickoff display from event_commence_utc."""
     data = frame.copy()
     kickoff = pd.to_datetime(data["event_commence_utc"], errors="coerce", utc=True)
-    data["kickoff_display"] = kickoff.dt.tz_convert("Europe/London").dt.strftime("%H:%M")
-    data.loc[kickoff.isna(), "kickoff_display"] = "—"
+    uk = kickoff.dt.tz_convert("Europe/London")
+    data["date_display"] = uk.dt.strftime("%a %d %b")
+    data["kickoff_display"] = uk.dt.strftime("%H:%M")
+    data.loc[kickoff.isna(), ["date_display", "kickoff_display"]] = "—"
     return data
+
+
+def filter_dashboard_date(frame: pd.DataFrame, date_mode: str, now_utc: pd.Timestamp) -> pd.DataFrame:
+    """Filter display rows by UK-local Today/Tomorrow without changing eligibility."""
+    if date_mode == "All dates":
+        return frame.copy()
+    now = pd.Timestamp(now_utc)
+    if now.tzinfo is None:
+        now = now.tz_localize("UTC")
+    else:
+        now = now.tz_convert("UTC")
+    today = now.tz_convert("Europe/London").date()
+    target = today if date_mode == "Today" else today + pd.Timedelta(days=1) if date_mode == "Tomorrow" else None
+    if target is None:
+        raise ValueError(f"unsupported dashboard date mode: {date_mode}")
+    kickoff = pd.to_datetime(frame["event_commence_utc"], errors="coerce", utc=True).dt.tz_convert("Europe/London")
+    return frame[kickoff.dt.date == target].copy()
 
 
 def sort_dashboard_rows(frame: pd.DataFrame, sort_mode: str) -> pd.DataFrame:

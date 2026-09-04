@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 
 from value_feed import (
     apply_dashboard_safety, select_adapter, sort_candidates, sort_dashboard_rows,
-    validate_feed, with_display_percentages, with_fixture_kickoff_display, with_qol_display,
+    validate_feed, with_display_percentages, with_fixture_kickoff_display, with_qol_display, filter_dashboard_date,
 )
 
 
@@ -59,27 +59,31 @@ def load_configured_feed(mode: str, csv_url: str, csv_path: str) -> pd.DataFrame
 
 
 def candidate_table(rows: pd.DataFrame) -> pd.DataFrame:
-    columns = ["price_grade", "model_grade", "kickoff_display", "fixture", "market", "model_rationale", "exchange_price_display",
+    columns = ["price_grade", "model_grade", "date_display", "kickoff_display", "fixture", "market", "model_rationale", "exchange_price_display",
                "effective_exchange_odds", "model_percent_display", "edge_percent_display",
-               "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]
+               "available_liquidity_gbp", "price_age_clock"]
     return rows[columns]
 
 
 def betting_board(data: pd.DataFrame, demo: bool) -> None:
-    sort_mode = st.selectbox(
+    cdate, csort = st.columns(2)
+    date_mode = cdate.selectbox("Date", ["All dates", "Today", "Tomorrow"], index=0)
+    sort_mode = csort.selectbox(
         "Sort by",
         ["Kickoff — earliest first", "Kickoff — latest first", "Model/value ranking"],
         index=0,
     )
+    filtered = filter_dashboard_date(data, date_mode, now_utc)
 
     st.subheader("Live Value Candidates")
-    live = sort_dashboard_rows(data[data.dashboard_candidate], sort_mode)
+    live = sort_dashboard_rows(filtered[filtered.dashboard_candidate], sort_mode)
     if demo:
         st.info("Demonstration mode cannot produce live value candidates.")
     elif live.empty:
         st.info("No markets currently satisfy every model, value, freshness and pre-match control.")
     else:
         st.dataframe(candidate_table(live), use_container_width=True, hide_index=True, column_config={
+            "date_display": "Date",
             "kickoff_display": "Kickoff",
             "market": "Model Selection",
             "model_rationale": "Model Rationale",
@@ -87,7 +91,6 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
             "effective_exchange_odds": st.column_config.NumberColumn("Effective decimal", format="%.3f"),
             "model_percent_display": st.column_config.NumberColumn("Model %", format="%.1f%%"),
             "edge_percent_display": st.column_config.NumberColumn("Edge %", format="%.1f%%"),
-            "ev_percent_display": st.column_config.NumberColumn("EV %", format="%.1f%%"),
             "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
             "price_age_clock": "Age",
         })
@@ -95,17 +98,18 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     st.subheader("All Model Markets")
     st.caption("Model Selection shows the model-favoured side for each market family; it may therefore switch between Over and Under.")
     c1, c2 = st.columns(2)
-    leagues = c1.multiselect("League", sorted(data.competition.unique()))
-    markets = c2.multiselect("Model Selection", sorted(data.market.unique()))
-    view = data
+    leagues = c1.multiselect("League", sorted(filtered.competition.unique()))
+    markets = c2.multiselect("Model Selection", sorted(filtered.market.unique()))
+    view = filtered
     if leagues: view = view[view.competition.isin(leagues)]
     if markets: view = view[view.market.isin(markets)]
     view = sort_dashboard_rows(view, sort_mode)
-    st.dataframe(view[["kickoff_display", "fixture", "market", "model_grade", "price_grade", "exchange_price_display",
+    st.dataframe(view[["date_display", "kickoff_display", "fixture", "market", "model_grade", "price_grade", "exchange_price_display",
                        "effective_exchange_odds", "model_percent_display", "edge_percent_display",
-                       "ev_percent_display", "available_liquidity_gbp", "price_age_clock"]],
+                       "available_liquidity_gbp", "price_age_clock"]],
                  use_container_width=True, hide_index=True,
                  column_config={
+                     "date_display": "Date",
                      "kickoff_display": "Kickoff",
                      "market": "Model Selection",
                      "model_rationale": "Model Rationale",
@@ -113,7 +117,6 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
                      "effective_exchange_odds": st.column_config.NumberColumn("Effective decimal", format="%.3f"),
                      "model_percent_display": st.column_config.NumberColumn("Model %", format="%.1f%%"),
                      "edge_percent_display": st.column_config.NumberColumn("Edge %", format="%.1f%%"),
-                     "ev_percent_display": st.column_config.NumberColumn("EV %", format="%.1f%%"),
                      "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
                      "price_age_clock": "Age",
                  })
@@ -123,8 +126,9 @@ def match_analysis(data: pd.DataFrame) -> None:
     st.subheader("Match Analysis")
     fixture = st.selectbox("Fixture", data.fixture.drop_duplicates().tolist())
     rows = data[data.fixture.eq(fixture)]
+    date = rows["date_display"].iloc[0] if not rows.empty else "—"
     kickoff = rows["kickoff_display"].iloc[0] if not rows.empty else "—"
-    st.caption(f"Kickoff: {kickoff} UK time")
+    st.caption(f"Date: {date} · Kickoff: {kickoff} UK time")
     for _, row in rows.iterrows():
         with st.container(border=True):
             st.markdown(f"### Model Selection: {row.market}")
@@ -163,7 +167,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.4 · kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.5 · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")

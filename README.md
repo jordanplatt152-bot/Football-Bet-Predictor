@@ -79,3 +79,10 @@ python -m py_compile app.py value_feed.py
 - Adds Betting Board sorting for earliest kickoff, latest kickoff, or the existing model/value ranking.
 - Displays kickoff time in Match Analysis.
 - Presentation only: no model, candidate-eligibility, price/value, cutoff, or liquidity logic is changed.
+
+## V1.2.1.5 — Date + kickoff sorting
+- Adds UK-local `Date` (`Fri 04 Sep`) alongside `Kickoff`.
+- Adds `All dates / Today / Tomorrow` Betting Board filter using the UK calendar date.
+- Earliest/latest sorting continues to use the full fixture timestamp, so ordering is chronological across both days.
+- Hides EV % from the main Betting Board tables only; EV remains in the underlying data and Match Analysis.
+- No changes to model, candidate eligibility, pricing, cutoff, liquidity, or feed contract logic.
