@@ -81,19 +81,22 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     summaries = fixture_summary_rows(filtered, sort_mode)
     if not summaries:
         st.info("No fixtures are available for the selected date.")
-    for summary in summaries:
-        with st.container(border=True):
-            st.markdown(f"### {summary['fixture']}")
-            st.caption(f"{summary['date']} · {summary['kickoff']} UK · {summary['competition']}")
-            x1, x2, x3 = st.columns(3)
-            x1.metric("Home xG", f"{summary['home_xg']:.2f}")
-            x2.metric("Away xG", f"{summary['away_xg']:.2f}")
-            x3.metric("Total xG", f"{summary['total_xg']:.2f}")
-            selections = " · ".join(
-                f"{market} {probability:.1%} (Grade {grade})"
-                for market, probability, grade in summary["top_selections"]
-            )
-            st.markdown(f"**Strongest model selections:** {selections}")
+    fixture_columns = st.columns(2)
+    for index, summary in enumerate(summaries):
+        with fixture_columns[index % 2]:
+            with st.container(border=True):
+                st.markdown(f"### {summary['fixture']}")
+                st.caption(f"{summary['date']} · {summary['kickoff']} UK · {summary['competition']}")
+                st.markdown(
+                    f"Home xG **{summary['home_xg']:.2f}** · "
+                    f"Away xG **{summary['away_xg']:.2f}** · "
+                    f"Total xG **{summary['total_xg']:.2f}**"
+                )
+                selections = " · ".join(
+                    f"{market} {probability:.1%} ({grade})"
+                    for market, probability, grade in summary["top_selections"]
+                )
+                st.markdown(f"**Strongest:** {selections}")
 
     st.subheader("Live Value Candidates")
     live_base = filtered[filtered.dashboard_candidate].copy()
@@ -191,7 +194,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.7 · fixture-first overview · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.8 · compact fixture cards · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")

@@ -100,3 +100,10 @@ python -m py_compile app.py value_feed.py
 - Cards respect the existing date filter and kickoff/model-value sort mode.
 - Existing Live Value Candidates and All Model Markets remain underneath unchanged.
 - Presentation only: no model, candidate eligibility, price/value, freshness, cutoff, liquidity, feed-contract, or betting behaviour changes.
+
+## V1.2.1.8 — Compact fixture cards
+
+- Fixture Overview now renders as a two-column desktop grid.
+- Each card retains Date, Kickoff, Competition, Home/Away/Total xG, and strongest model selections.
+- xG values are presented inline to reduce vertical height.
+- Live Value Candidates, bet-type filtering, All Model Markets, model logic, candidate eligibility, price/value logic, freshness, cutoff and liquidity behaviour are unchanged.
