@@ -113,6 +113,14 @@ python -m py_compile app.py value_feed.py
 
 Betting Board presentation-only refinement: Live Value Candidates now appears immediately after the Date/Sort controls, followed by the existing compact Fixture Overview and then All Model Markets. Candidate qualification, model/feed logic, price/value calculations, freshness/cutoff controls, liquidity treatment, automatic refresh and read-only safety boundaries are unchanged.
 
-## V1.2.1.10 — Compact three-column fixture grid
+## V1.2.1.11 — Compact three-column fixture grid
 
 Presentation-only refinement to reduce Betting Board scrolling. Fixture Overview now uses a three-column desktop grid and renders each fixture as a single compact HTML card with reduced padding and typography. Every card still shows fixture, UK date/kickoff, competition, Home/Away/Total xG, and up to three strongest model selections. Live Value Candidates remains first, and All Model Markets remains below Fixture Overview. Model/feed logic, candidate qualification, price/value calculations, freshness/cutoff controls, liquidity treatment, automatic refresh, workbook write boundaries and betting capability are unchanged.
+
+
+## V1.2.1.11 UI refinement
+
+- Live Value Candidates remains first.
+- Fixture Overview is a collapsed-by-default expander retaining the compact three-column grid.
+- All Model Markets adds an exact UK kickoff-time dropdown derived from the currently date-filtered rows; All times is the default.
+- Feed/model/value/freshness/cutoff/liquidity logic is unchanged.
