@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from html import escape
 from datetime import timedelta
 from urllib.parse import urlparse
 
@@ -106,22 +107,52 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     summaries = fixture_summary_rows(filtered, sort_mode)
     if not summaries:
         st.info("No fixtures are available for the selected date.")
-    fixture_columns = st.columns(2)
+    st.markdown(
+        """
+        <style>
+        .fixture-card-compact {
+            border: 1px solid rgba(49, 51, 63, 0.18);
+            border-radius: 0.55rem;
+            padding: 0.58rem 0.72rem 0.52rem 0.72rem;
+            margin-bottom: 0.55rem;
+            line-height: 1.22;
+        }
+        .fixture-card-title {
+            font-size: 1.02rem;
+            font-weight: 700;
+            margin-bottom: 0.18rem;
+        }
+        .fixture-card-meta {
+            font-size: 0.76rem;
+            opacity: 0.68;
+            margin-bottom: 0.28rem;
+        }
+        .fixture-card-stats, .fixture-card-strongest {
+            font-size: 0.82rem;
+            margin-top: 0.16rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    fixture_columns = st.columns(3)
     for index, summary in enumerate(summaries):
-        with fixture_columns[index % 2]:
-            with st.container(border=True):
-                st.markdown(f"### {summary['fixture']}")
-                st.caption(f"{summary['date']} · {summary['kickoff']} UK · {summary['competition']}")
-                st.markdown(
-                    f"Home xG **{summary['home_xg']:.2f}** · "
-                    f"Away xG **{summary['away_xg']:.2f}** · "
-                    f"Total xG **{summary['total_xg']:.2f}**"
-                )
-                selections = " · ".join(
-                    f"{market} {probability:.1%} ({grade})"
-                    for market, probability, grade in summary["top_selections"]
-                )
-                st.markdown(f"**Strongest:** {selections}")
+        selections = " · ".join(
+            f"{escape(str(market))} {probability:.1%} ({escape(str(grade))})"
+            for market, probability, grade in summary["top_selections"]
+        )
+        card_html = (
+            f'<div class="fixture-card-compact">'
+            f'<div class="fixture-card-title">{escape(str(summary["fixture"]))}</div>'
+            f'<div class="fixture-card-meta">{escape(str(summary["date"]))} · '
+            f'{escape(str(summary["kickoff"]))} UK · {escape(str(summary["competition"]))}</div>'
+            f'<div class="fixture-card-stats">Home xG <b>{summary["home_xg"]:.2f}</b> · '
+            f'Away xG <b>{summary["away_xg"]:.2f}</b> · Total xG <b>{summary["total_xg"]:.2f}</b></div>'
+            f'<div class="fixture-card-strongest"><b>Strongest:</b> {selections}</div>'
+            f'</div>'
+        )
+        with fixture_columns[index % 3]:
+            st.markdown(card_html, unsafe_allow_html=True)
 
     st.subheader("All Model Markets")
     st.caption("Model Selection shows the model-favoured side for each market family; it may therefore switch between Over and Under.")
@@ -195,7 +226,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.9 · live value first · compact fixture cards · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.10 · live value first · compact 3-column fixture grid · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")
