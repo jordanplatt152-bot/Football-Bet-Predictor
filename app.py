@@ -76,28 +76,6 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
     )
     filtered = filter_dashboard_date(data, date_mode, now_utc)
 
-    st.subheader("Fixture Overview")
-    st.caption("Model-first fixture summary. Price/value confirmation remains in the sections below.")
-    summaries = fixture_summary_rows(filtered, sort_mode)
-    if not summaries:
-        st.info("No fixtures are available for the selected date.")
-    fixture_columns = st.columns(2)
-    for index, summary in enumerate(summaries):
-        with fixture_columns[index % 2]:
-            with st.container(border=True):
-                st.markdown(f"### {summary['fixture']}")
-                st.caption(f"{summary['date']} · {summary['kickoff']} UK · {summary['competition']}")
-                st.markdown(
-                    f"Home xG **{summary['home_xg']:.2f}** · "
-                    f"Away xG **{summary['away_xg']:.2f}** · "
-                    f"Total xG **{summary['total_xg']:.2f}**"
-                )
-                selections = " · ".join(
-                    f"{market} {probability:.1%} ({grade})"
-                    for market, probability, grade in summary["top_selections"]
-                )
-                st.markdown(f"**Strongest:** {selections}")
-
     st.subheader("Live Value Candidates")
     live_base = filtered[filtered.dashboard_candidate].copy()
     bet_type_options = ["All"] + sorted(live_base["market"].dropna().astype(str).unique().tolist())
@@ -121,6 +99,29 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
             "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
             "price_age_clock": "Age",
         })
+
+
+    st.subheader("Fixture Overview")
+    st.caption("Model-first fixture summary. Price/value confirmation remains in the sections below.")
+    summaries = fixture_summary_rows(filtered, sort_mode)
+    if not summaries:
+        st.info("No fixtures are available for the selected date.")
+    fixture_columns = st.columns(2)
+    for index, summary in enumerate(summaries):
+        with fixture_columns[index % 2]:
+            with st.container(border=True):
+                st.markdown(f"### {summary['fixture']}")
+                st.caption(f"{summary['date']} · {summary['kickoff']} UK · {summary['competition']}")
+                st.markdown(
+                    f"Home xG **{summary['home_xg']:.2f}** · "
+                    f"Away xG **{summary['away_xg']:.2f}** · "
+                    f"Total xG **{summary['total_xg']:.2f}**"
+                )
+                selections = " · ".join(
+                    f"{market} {probability:.1%} ({grade})"
+                    for market, probability, grade in summary["top_selections"]
+                )
+                st.markdown(f"**Strongest:** {selections}")
 
     st.subheader("All Model Markets")
     st.caption("Model Selection shows the model-favoured side for each market family; it may therefore switch between Over and Under.")
@@ -194,7 +195,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.8 · compact fixture cards · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.9 · live value first · compact fixture cards · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")

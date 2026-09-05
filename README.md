@@ -107,3 +107,8 @@ python -m py_compile app.py value_feed.py
 - Each card retains Date, Kickoff, Competition, Home/Away/Total xG, and strongest model selections.
 - xG values are presented inline to reduce vertical height.
 - Live Value Candidates, bet-type filtering, All Model Markets, model logic, candidate eligibility, price/value logic, freshness, cutoff and liquidity behaviour are unchanged.
+
+
+## V1.2.1.9 — Live value first
+
+Betting Board presentation-only refinement: Live Value Candidates now appears immediately after the Date/Sort controls, followed by the existing compact Fixture Overview and then All Model Markets. Candidate qualification, model/feed logic, price/value calculations, freshness/cutoff controls, liquidity treatment, automatic refresh and read-only safety boundaries are unchanged.
