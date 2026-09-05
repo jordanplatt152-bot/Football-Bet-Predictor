@@ -1,4 +1,4 @@
-# Football Model Centre V1.2.1.3
+# Football Model Centre V1.2.1.12
 
 This release adds the live model-and-value feed, independent candidate expiry, a five-minute dashboard refresh and separate `Live Value Candidates` / `All Model Markets` views.
 
@@ -124,3 +124,13 @@ Presentation-only refinement to reduce Betting Board scrolling. Fixture Overview
 - Fixture Overview is a collapsed-by-default expander retaining the compact three-column grid.
 - All Model Markets adds an exact UK kickoff-time dropdown derived from the currently date-filtered rows; All times is the default.
 - Feed/model/value/freshness/cutoff/liquidity logic is unchanged.
+
+
+## V1.2.1.12 — Compact Match Analysis
+
+- Match Analysis is now fixture-first: fixture, date, UK kickoff, league and Home/Away/Total xG are shown once.
+- The fixture's model markets are compared in one compact table with Model %, Model Grade, Exchange price, Effective decimal, Edge %, EV %, Price Grade, Liquidity and Age.
+- Per-market model rationale, cutoff, price source and informational liquidity are retained inside a collapsed detail expander.
+- The former repeated four-metric market cards are removed to reduce scrolling.
+- Betting Board V1.2.1.11 remains unchanged.
+- No model, feed, price/value, candidate, freshness, cutoff, liquidity, workbook-write or betting-order behaviour is changed.

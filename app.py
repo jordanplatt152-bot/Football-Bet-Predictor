@@ -187,23 +187,56 @@ def betting_board(data: pd.DataFrame, demo: bool) -> None:
 def match_analysis(data: pd.DataFrame) -> None:
     st.subheader("Match Analysis")
     fixture = st.selectbox("Fixture", data.fixture.drop_duplicates().tolist())
-    rows = data[data.fixture.eq(fixture)]
-    date = rows["date_display"].iloc[0] if not rows.empty else "—"
-    kickoff = rows["kickoff_display"].iloc[0] if not rows.empty else "—"
-    st.caption(f"Date: {date} · Kickoff: {kickoff} UK time")
-    for _, row in rows.iterrows():
-        with st.container(border=True):
-            st.markdown(f"### Model Selection: {row.market}")
-            a, b, c, d = st.columns(4)
-            a.metric("Model", f"{row.production_probability:.1%}", f"Grade {row.model_grade}")
-            b.metric("Exchange", row.exchange_price_display or "—", f"Effective {row.effective_exchange_odds:.3f}" if pd.notna(row.effective_exchange_odds) else "Unpriced")
-            c.metric("Edge", f"{row.probability_edge:.1%}" if pd.notna(row.probability_edge) else "—")
-            d.metric("EV", f"{row.expected_value:.1%}" if pd.notna(row.expected_value) else "—", f"Price grade {row.price_grade}")
-            st.markdown(f"**Model rationale:** {row.model_rationale}")
-            st.caption(f"Model evidence: Home xG {row.home_expected_goals:.2f} · Away xG {row.away_expected_goals:.2f} · Total xG {row.expected_total_goals:.2f}")
-            st.write(f"Value confirmation: Price Grade {row.price_grade} · Edge {row.probability_edge:.1%} · EV {row.expected_value:.1%}")
-            st.write(f"Liquidity (information only): £{row.available_liquidity_gbp:.2f} · Price age: {row.price_age_clock} · Cutoff: {row.pre_match_cutoff_utc}")
+    rows = data[data.fixture.eq(fixture)].copy()
+    if rows.empty:
+        st.info("No model markets are available for this fixture.")
+        return
 
+    first = rows.iloc[0]
+    date = first["date_display"]
+    kickoff = first["kickoff_display"]
+    competition = first["competition"]
+    st.markdown(f"### {fixture}")
+    st.caption(f"Date: {date} · Kickoff: {kickoff} UK · League: {competition}")
+    st.markdown(
+        f"Home xG **{first.home_expected_goals:.2f}** · "
+        f"Away xG **{first.away_expected_goals:.2f}** · "
+        f"Total xG **{first.expected_total_goals:.2f}**"
+    )
+
+    rows["ev_percent_display"] = rows["expected_value"] * 100
+    comparison_columns = [
+        "market", "model_percent_display", "model_grade",
+        "exchange_price_display", "effective_exchange_odds",
+        "edge_percent_display", "ev_percent_display", "price_grade",
+        "available_liquidity_gbp", "price_age_clock",
+    ]
+    st.dataframe(
+        rows[comparison_columns],
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "market": "Model Selection",
+            "model_percent_display": st.column_config.NumberColumn("Model %", format="%.1f%%"),
+            "model_grade": "Model Grade",
+            "exchange_price_display": "Exchange price",
+            "effective_exchange_odds": st.column_config.NumberColumn("Effective decimal", format="%.3f"),
+            "edge_percent_display": st.column_config.NumberColumn("Edge %", format="%.1f%%"),
+            "ev_percent_display": st.column_config.NumberColumn("EV %", format="%.1f%%"),
+            "price_grade": "Price Grade",
+            "available_liquidity_gbp": st.column_config.NumberColumn("Liquidity", format="£%.2f"),
+            "price_age_clock": "Age",
+        },
+    )
+
+    with st.expander("Detailed rationale and cutoff information", expanded=False):
+        for _, row in rows.iterrows():
+            st.markdown(f"**{row.market} — Model rationale:** {row.model_rationale}")
+            st.caption(
+                f"Cutoff: {row.pre_match_cutoff_utc} · "
+                f"Price source: {row.price_source} · "
+                f"Liquidity (information only): £{row.available_liquidity_gbp:.2f}"
+            )
 
 def model_health(data: pd.DataFrame, now: pd.Timestamp) -> None:
     st.subheader("Model Health")
@@ -229,7 +262,7 @@ with st.sidebar:
     page = st.radio("Navigation", ["Betting Board", "Match Analysis", "Model Health"])
     if st.button("↻ Refresh Live Data", use_container_width=True):
         st.cache_data.clear(); st.rerun()
-    st.caption("V1.2.1.11 · live value first · collapsible compact fixture grid · all-markets kickoff filter · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
+    st.caption("V1.2.1.12 · compact match analysis · live value first · collapsible compact fixture grid · all-markets kickoff filter · live candidate bet-type filter · date + kickoff sorting · model-first decision clarity · liquidity-independent · automatic five-minute safety refresh")
 
 csv_url, url_source = setting("PREDICTIONS_CSV_URL")
 csv_path, path_source = setting("PREDICTIONS_CSV_PATH")
